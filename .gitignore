@@ -1,0 +1,4 @@
+config.yml
+*.sh
+test-file-change-watcher
+.vscode/

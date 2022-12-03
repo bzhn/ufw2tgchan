@@ -1,0 +1,11 @@
+# rename this file to example.yml to use in production
+vpsip: "123.123.123.123"
+file: "/var/log/ufw.log"
+abuseipapikey: "0129f36c8f8a2159bce6415c7c0ebe5b32c8941882bb4a28ccca748dc29463130129f36c8f8a2159"
+vitalports:
+  - 443
+  - 80
+  - 8080
+  - 6379
+TgBotAPI: "1234567890:AAjN2MwZWJlNWIzMmM4OTQxODgyYmI0YTI4"
+ChannelToPub: -1001813361030
