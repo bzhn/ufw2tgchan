@@ -2,6 +2,15 @@ Telegram Bot, which reads logs from UFW and sends notifications to telegram chan
 
 Bot reads the configuration file, parses the path to the file to be followed, parses the Telegram bot API token, parses the channel to which updates are sent, and does other things. After that, the bot uses this information to wait for new changes in the log file and sends messages to the channel in pretty format.
 
+# Example
+
+Here is the example of messages sent to the channel.
+
+![image](https://user-images.githubusercontent.com/89320434/205466971-4120b8c1-6df1-4ccd-aad3-9c055d6974fa.png)
+
+Note the vital port that was distinguished with !! emoji. I setted this up in the settings, when had added the Redis's port (6379) to vital ports in `config.yml`.
+
+
 # Usage
 
 ## Setup UFW firewall
