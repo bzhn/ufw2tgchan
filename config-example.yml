@@ -2,10 +2,19 @@
 vpsip: "123.123.123.123"
 file: "/var/log/ufw.log"
 abuseipapikey: "0129f36c8f8a2159bce6415c7c0ebe5b32c8941882bb4a28ccca748dc29463130129f36c8f8a2159"
-vitalports:
+vitalports: # the #vital tag will be added to the message
   - 443
   - 80
   - 8080
   - 6379
+tags:
+  20: ftp
+  22: ssh
+  80: http
+  443: https
+  4001: ipfs
+  5001: dockerreg
+  6379: redis
+  8000: surrealdb
 TgBotAPI: "1234567890:AAjN2MwZWJlNWIzMmM4OTQxODgyYmI0YTI4"
 ChannelToPub: -1001813361030

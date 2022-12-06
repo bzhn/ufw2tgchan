@@ -1,4 +1,5 @@
 config.yml
 *.sh
 test-file-change-watcher
+ufw2tgchan
 .vscode/

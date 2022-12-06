@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/fsnotify/fsnotify"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -37,13 +38,33 @@ type UfwLogMsg struct {
 }
 
 func (m UfwLogMsg) String() string {
-	importanceLine := func(b bool) string {
-		if b {
-			return fmt.Sprintf("‼ <code>%d</code> was pinged by <code>%s</code>\n", m.DestPort, m.SourceIP)
+	// importanceLine := func(b bool) string {
+	// 	if b {
+	// 		return fmt.Sprintf("‼ <code>%d</code> was pinged by <code>%s</code>\n", m.DestPort, m.SourceIP)
+	// 	}
+	// 	return ""
+	// }(isVitalPort(m.DestPort))
+
+	tagsList := func(p string) string {
+		tags := getTags(p)
+		if tags == "" {
+			return ""
 		}
-		return ""
-	}(isVitalPort(m.DestPort))
-	return fmt.Sprintf("%s<code>%s</code> → <code>%d</code> [%s] \n\nAction:\t<code>%s</code>\nSource:\t<code>%s:%d</code>\nDest:\t<code>%s:%d</code>", importanceLine, m.SourceIP, m.DestPort, m.Action, m.Action, m.SourceIP, m.SourcePort, m.DestIP, m.DestPort)
+		return fmt.Sprintf("\n\n<code>%s</code>\n%s", m.SourceIP, tags)
+	}(Itoa(m.DestPort))
+	return fmt.Sprintf("<code>%s</code> → <code>%d</code> [%s] \n\nAction:\t<code>%s</code>\nSource:\t<code>%s:%d</code>\nDest:\t<code>%s:%d</code>%s", m.SourceIP, m.DestPort, m.Action, m.Action, m.SourceIP, m.SourcePort, m.DestIP, m.DestPort, tagsList)
+}
+
+// getTags returns the #vital tag if the port is in the vital slice in the config.yml
+// also appends a tag if a port is listed in "tags" map in the config.yml
+func getTags(p string) (t string) {
+	if v, ok := Tags[p]; ok {
+		t = fmt.Sprintf("#%s", v)
+	}
+	if isVitalPort(tryAtoi(p)) {
+		t = strings.Join(append([]string{t}, "#vital"), " ")
+	}
+	return t
 }
 
 func isVitalPort(port int) bool {
@@ -62,6 +83,7 @@ var VitalPorts []int        // Ports which will be marked as important when some
 var TgBotAPIToken string    // Telegram Bot API token
 var ChannelToPub int64      // Channel where new messages will be sent
 var BotClient *tgbotapi.BotAPI
+var Tags = make(map[string]string) // Tags linked to ports. These #tags will appear in the bottom messages whith listed (in config.yml) ports
 
 // errors
 var (
@@ -90,6 +112,7 @@ func init() {
 	VitalPorts = viper.GetIntSlice("vitalports")
 	TgBotAPIToken = viper.GetString("TgBotAPI")
 	ChannelToPub = viper.GetInt64("ChannelToPub")
+	Tags = viper.GetStringMapString("tags")
 
 	log.Printf("\n%s\n%s\n%s\n%v\n%d\n", abRepApi, MyVPSIP, FileToFollow, VitalPorts, ChannelToPub)
 
@@ -105,6 +128,8 @@ func init() {
 	log.Println("Authorised bot with username", BotClient.Self.UserName)
 }
 
+// Parses log line to UfwLogMsg struct if it's possible
+// return error if not
 func ParseMsg(msg string) (UfwLogMsg, error) {
 	matches := re.FindStringSubmatch(msg)
 	// log.Println("Got string", msg)
@@ -136,6 +161,8 @@ func ParseMsg(msg string) (UfwLogMsg, error) {
 	return ulm, err
 }
 
+// Create a map with regexp's groups where group name (or index) is a key
+// and match (log message that could be parsed) is a value
 func matchesToMap(reg *regexp.Regexp, matches []string) (map[string]string, error) {
 	regexNnames := reg.SubexpNames()
 	if len(regexNnames) != len(matches) {
@@ -154,11 +181,19 @@ func matchesToMap(reg *regexp.Regexp, matches []string) (map[string]string, erro
 	return res, nil
 }
 
+// tryAtoi tries to parse Int from ASCII value
+//
+// Returns 0 if impossible to parse
 func tryAtoi(s string) (n int) {
 	n, _ = strconv.Atoi(s)
 	return
 }
 
+func Itoa(n int) string {
+	return fmt.Sprintf("%d", n)
+}
+
+// SendIfOk sends message if the connection is incoming
 func SendIfOk(ufw UfwLogMsg) {
 	log.Println("Checking if the message can be sent... Connection is", fmt.Sprintf("%s -> %d", ufw.SourceIP, ufw.DestPort))
 	if ufw.IsInput == false {
@@ -233,6 +268,7 @@ func main() {
 	<-make(chan struct{})
 }
 
+// Read last line from the config file
 func ReadLastLine(filepath string) string {
 	f, err := os.Open(filepath)
 	if err != nil {
