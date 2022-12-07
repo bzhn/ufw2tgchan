@@ -185,11 +185,13 @@ func dailyStatsSender(bot *tgbotapi.BotAPI, period time.Duration) {
 
 		msgIPsLeaders := fmt.Sprintf("The most active IPs:\n%s", statsGetLeadingIPs(5))
 
+		msgSummary := fmt.Sprintf("%d unique IP pinged %d ports", statsGetNUniqueIPs(), statsGetNUniquePorts())
+
 		y, w := now.ISOWeek()
+		m := now.Format("01")
+		msgTags := fmt.Sprintf("#stats #y%d #y%dm%s #y%dw%d", y, y, m, y, w)
 
-		msgTags := fmt.Sprintf("#stats #y%d #ym%s #y%dw%d", y, now.Format("200601"), y, w) // TODO: replace #ym%s to #y%sm%s
-
-		msg := tgbotapi.NewMessage(ChannelToPub, fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s", msgHeader, msgPortsLeaders, msgIPsLeaders, msgTags))
+		msg := tgbotapi.NewMessage(ChannelToPub, fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s\n\n%s", msgHeader, msgSummary, msgPortsLeaders, msgIPsLeaders, msgTags))
 		msg.ParseMode = tgbotapi.ModeHTML
 		if _, err := bot.Send(msg); err != nil {
 			log.Println(err)
