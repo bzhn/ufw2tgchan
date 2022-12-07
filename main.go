@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -16,14 +17,7 @@ import (
 	"go.xela.tech/abuseipdb"
 )
 
-// type UFWAction int
-
-// const (
-// 	ALLOW UFWAction = 1 << iota
-// 	AUDIT
-// 	BLOCK
-// 	UNKNOWN
-// )
+var ProgramStartTime = time.Now()
 
 // One line of a message from ufw firewall
 type UfwLogMsg struct {
@@ -207,7 +201,11 @@ func SendIfOk(ufw UfwLogMsg) {
 	if err != nil {
 		log.Print(err)
 	}
-	log.Printf("Sent message to channel")
+
+	statsIncrIP(ufw.SourceIP)
+	statsIncrPort(ufw.DestPort)
+
+	log.Printf("Sent message to channel and updated stats")
 }
 
 func main() {
@@ -255,6 +253,8 @@ func main() {
 			}
 		}
 	}()
+
+	go dailyStatsSender(BotClient, 1*time.Minute)
 
 	// Add a path.
 	// err = watcher.Add("/home/dev/Downloads/changeme.txt")
