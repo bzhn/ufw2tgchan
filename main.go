@@ -254,7 +254,7 @@ func main() {
 		}
 	}()
 
-	go dailyStatsSender(BotClient, 1*time.Minute)
+	go dailyStatsSender(BotClient, 1*time.Hour)
 
 	// Add a path.
 	// err = watcher.Add("/home/dev/Downloads/changeme.txt")

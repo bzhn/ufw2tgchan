@@ -152,19 +152,14 @@ func statsClearIPs() {
 // dailyStatsSender runs in goroutine and sends messages to the channel
 // with daily statistics
 func dailyStatsSender(bot *tgbotapi.BotAPI, period time.Duration) {
-	now := time.Now()
+	started := time.Now()
 	bot.Send(tgbotapi.NewMessage(ChannelToPub, "#start"))
-	// Wait to send the first message
+
+	// Wait before sending a first message
 	{
-		// Time when the next sending message with stats
-		nextStats := func() time.Time {
-			rounded := now.Round(24 * time.Hour)
-			if rounded.Before(now) {
-				return rounded.Add(24 * time.Hour)
-			}
-			return rounded
-		}()
-		durToNextStats := nextStats.Sub(now)
+		// Time when the first message will be sent
+		nextStats := started.Truncate(24 * time.Hour).Add(24 * time.Hour)
+		durToNextStats := nextStats.Sub(started)
 
 		sleeper := time.NewTimer(durToNextStats)
 
@@ -172,6 +167,8 @@ func dailyStatsSender(bot *tgbotapi.BotAPI, period time.Duration) {
 	}
 
 	for {
+		now := time.Now().Add(-1 * time.Minute)
+
 		msgHeader := func() string {
 			// If the program started less than 24 hours ago
 			if past := now.Sub(ProgramStartTime); past < time.Duration(24*time.Hour) {
@@ -181,17 +178,17 @@ func dailyStatsSender(bot *tgbotapi.BotAPI, period time.Duration) {
 			}
 		}()
 
-		msgPortsLeaders := fmt.Sprintf("The most pinged ports:\n%s", statsGetLeadingPorts(5))
-
-		msgIPsLeaders := fmt.Sprintf("The most active IPs:\n%s", statsGetLeadingIPs(5))
-
 		msgSummary := fmt.Sprintf("%d unique IP pinged %d ports", statsGetNUniqueIPs(), statsGetNUniquePorts())
+
+		msgPortsLeaders := fmt.Sprintf("The most pinged ports:\n%s", statsGetLeadingPorts(10))
+
+		msgIPsLeaders := fmt.Sprintf("The most active IPs:\n%s", statsGetLeadingIPs(10))
 
 		y, w := now.ISOWeek()
 		m := now.Format("01")
 		msgTags := fmt.Sprintf("#stats #y%d #y%dm%s #y%dw%d", y, y, m, y, w)
 
-		msg := tgbotapi.NewMessage(ChannelToPub, fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s\n\n%s", msgHeader, msgSummary, msgPortsLeaders, msgIPsLeaders, msgTags))
+		msg := tgbotapi.NewMessage(ChannelToPub, fmt.Sprintf("%s\n\n%s\n\n%s\n%s\n%s", msgHeader, msgSummary, msgPortsLeaders, msgIPsLeaders, msgTags))
 		msg.ParseMode = tgbotapi.ModeHTML
 		if _, err := bot.Send(msg); err != nil {
 			log.Println(err)
